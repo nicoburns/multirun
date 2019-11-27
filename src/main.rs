@@ -1,34 +1,55 @@
+use std::collections::BTreeMap;
 use std::process::Stdio;
 use std::io::{stdout, Write};
+use std::fs;
 
-use futures::stream::select_all;
+use futures::stream::{Stream, select_all};
 use futures_util::pin_mut;
 use futures_util::stream::StreamExt;
 
 use tokio::io::{BufReader, AsyncBufReadExt};
 use tokio::process::Command;
 
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Service {
+    pub directory: Option<String>,
+    pub command: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Config {
+    pub services: BTreeMap<String, Service>
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd1 = Command::new("yes");
-    cmd1.arg("foo");
 
-    let mut cmd2 = Command::new("yes");
-    cmd2.arg("bar");
+    let config : Config = serde_json::from_str(fs::read_to_string("multirun.json")?.as_str())?;
+    let max_service_name_length = config.services.keys().map(|name| name.len()).max().unwrap_or(0);
 
-    let mut cmd3 = Command::new("yes");
-    cmd3.arg("baz");
+    let readers : Vec<_> = config.services.iter().flat_map(move |(name, service)| {
 
-    let cmds = vec![("FOO PROCESS", cmd1), ("BAR PROCESS", cmd2), ("BAZ PROCESS", cmd3)];
+        let command_parts = shellwords::split(&service.command).unwrap();
 
-    let readers : Vec<_> = cmds.into_iter().map(|(name, mut cmd)| {
+        let mut command = Command::new(command_parts[0].clone());
+        command.args(command_parts.iter().skip(1));
+        command.kill_on_drop(true);
+        
+        if let Some(dir) = &service.directory {
+            command.current_dir(dir.clone());
+        }
 
         // Specify that we want the command's standard output piped back to us, not inherited from our process
-        cmd.stdout(Stdio::piped());
+        command.stdout(Stdio::piped());
+        command.stderr(Stdio::piped());
 
-        let mut child = cmd.spawn().expect("failed to spawn command");
+        let mut child = command.spawn().expect("failed to spawn command");
         let stdout = child.stdout().take().expect("child did not have a handle to stdout");
-        let reader = BufReader::new(stdout).lines();
+        let stderr = child.stderr().take().expect("child did not have a handle to stderr");
+        let stdout_reader = BufReader::new(stdout).lines();
+        let stderr_reader = BufReader::new(stderr).lines();
 
         // Ensure the child process is spawned in the runtime so it can
         // make progress on its own while we await for any output.
@@ -37,7 +58,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("child status was: {}", status);
         });
 
-        reader.map(move |line_result| line_result.map(|line| format!("{}: {}", name, line)))
+        let stdout_prefix = format!("{:width$} | ", name.to_uppercase(), width=max_service_name_length);
+        let stderr_prefix = stdout_prefix.clone();
+        return vec![
+            Box::new(stdout_reader.map(move |line_result| line_result.map(|line| format!("{}{}", stderr_prefix, line)))) as Box<dyn Stream<Item=Result<String, _>> + Unpin>,
+            Box::new(stderr_reader.map(move |line_result| line_result.map(|line| format!("{}{}", stdout_prefix, line)))) as Box<dyn Stream<Item=Result<String, _>> + Unpin>,
+        ];
     }).collect();
 
     let line_stream = select_all(readers);
