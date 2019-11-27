@@ -1,7 +1,5 @@
-use std::collections::BTreeMap;
 use std::process::Stdio;
 use std::io::{stdout, Write};
-use std::fs;
 
 use futures::stream::{Stream, select_all};
 use futures_util::pin_mut;
@@ -10,24 +8,15 @@ use futures_util::stream::StreamExt;
 use tokio::io::{BufReader, AsyncBufReadExt};
 use tokio::process::Command;
 
-use serde::{Serialize, Deserialize};
+mod config;
+use config::Config;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Service {
-    pub directory: Option<String>,
-    pub command: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Config {
-    pub services: BTreeMap<String, Service>
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let config : Config = serde_json::from_str(fs::read_to_string("multirun.json")?.as_str())?;
-    let max_service_name_length = config.services.keys().map(|name| name.len()).max().unwrap_or(0);
+    let config = Config::load()?;
+    let max_service_name_length = config.max_service_name_length();
 
     let readers : Vec<_> = config.services.iter().flat_map(move |(name, service)| {
 
