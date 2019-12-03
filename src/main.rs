@@ -15,6 +15,12 @@ use config::Config;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
+    // Return version number if any of the CLI arguments are "--version"
+    if std::env::args().any(|arg| arg == "--version") {
+        println!("multirun v{}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
     let config = Config::load()?;
     let max_service_name_length = config.max_service_name_length();
 
