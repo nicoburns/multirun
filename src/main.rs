@@ -24,6 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let mut command = Command::new(command_parts[0].clone());
         command.args(command_parts.iter().skip(1));
+        command.envs(&service.environment);
         command.kill_on_drop(true);
         
         if let Some(dir) = &service.directory {

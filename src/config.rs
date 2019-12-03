@@ -10,6 +10,8 @@ const CONFIG_FILE_NAME : &str = "multirun.json";
 pub struct Service {
     pub directory: Option<String>,
     pub command: String,
+    #[serde(default)]
+    pub environment: BTreeMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
