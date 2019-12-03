@@ -1,6 +1,6 @@
 [package]
 name = "multirun"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Nico Burns <nico@nicoburns.com>"]
 edition = "2018"
 
