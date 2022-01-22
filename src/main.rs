@@ -9,7 +9,7 @@ use tokio::io::{BufReader, AsyncBufReadExt};
 use tokio::process::Command;
 
 mod config;
-use config::Config;
+use config::ConfigFile;
 
 
 #[tokio::main]
@@ -20,21 +20,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("multirun v{}", env!("CARGO_PKG_VERSION"));
         return Ok(());
     }
+    
+    let config_file = ConfigFile::load()?;
+    let max_service_name_length = config_file.config.max_service_name_length();
 
-    let config = Config::load()?;
-    let max_service_name_length = config.max_service_name_length();
+    let print_config = std::env::args().any(|arg| arg == "--print-config");
+    if print_config {
+        println!("{config_file:#?}");
+    }
 
-    let readers : Vec<_> = config.services.iter().flat_map(move |(name, service)| {
+    let readers : Vec<_> = config_file.config.services.clone().iter().flat_map(move |(name, service)| {
 
         let command_parts = shellwords::split(&service.command).unwrap();
-
         let mut command = Command::new(command_parts[0].clone());
         command.args(command_parts.iter().skip(1));
+
         command.envs(&service.environment);
         command.kill_on_drop(true);
         
         if let Some(dir) = &service.directory {
-            command.current_dir(dir.clone());
+            command.current_dir(&dir);
         }
 
         // Specify that we want the command's standard output piped back to us, not inherited from our process
