@@ -6,6 +6,7 @@ use futures_util::pin_mut;
 use futures_util::stream::StreamExt;
 
 use tokio::io::{BufReader, AsyncBufReadExt};
+use tokio_stream::wrappers::LinesStream;
 use tokio::process::Command;
 
 mod config;
@@ -47,23 +48,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         command.stderr(Stdio::piped());
 
         let mut child = command.spawn().expect("failed to spawn command");
-        let stdout = child.stdout().take().expect("child did not have a handle to stdout");
-        let stderr = child.stderr().take().expect("child did not have a handle to stderr");
-        let stdout_reader = BufReader::new(stdout).lines();
-        let stderr_reader = BufReader::new(stderr).lines();
+        let stdout = child.stdout.take().expect("child did not have a handle to stdout");
+        let stderr = child.stderr.take().expect("child did not have a handle to stderr");
+        let stdout_reader = LinesStream::new(BufReader::new(stdout).lines());
+        let stderr_reader = LinesStream::new(BufReader::new(stderr).lines());
 
         // Ensure the child process is spawned in the runtime so it can
         // make progress on its own while we await for any output.
-        tokio::spawn(async {
-            let status = child.await.expect("child process encountered an error");
+        tokio::spawn(async move {
+            let status = child.wait().await.expect("child process encountered an error");
             println!("child status was: {}", status);
         });
 
         let stdout_prefix = format!("{:width$} | ", name.to_uppercase(), width=max_service_name_length);
         let stderr_prefix = stdout_prefix.clone();
         return vec![
-            Box::new(stdout_reader.map(move |line_result| line_result.map(|line| format!("{}{}", stderr_prefix, line)))) as Box<dyn Stream<Item=Result<String, _>> + Unpin>,
-            Box::new(stderr_reader.map(move |line_result| line_result.map(|line| format!("{}{}", stdout_prefix, line)))) as Box<dyn Stream<Item=Result<String, _>> + Unpin>,
+            Box::new(stdout_reader.map(move |line_result| line_result.map(|line| format!("{stdout_prefix}{line}")))) as Box<dyn Stream<Item=Result<String, _>> + Unpin>,
+            Box::new(stderr_reader.map(move |line_result| line_result.map(|line| format!("{stderr_prefix}{line}")))) as Box<dyn Stream<Item=Result<String, _>> + Unpin>,
         ];
     }).collect();
 
