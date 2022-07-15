@@ -3,6 +3,13 @@ name = "multirun"
 version = "0.3.1"
 authors = ["Nico Burns <nico@nicoburns.com>"]
 edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "CLI tool for running multiple commands at once and multiplexing the output"
+homepage = "https://github.com/nicoburns/multirun"
+documentation = "https://github.com/nicoburns/multirun"
+repository = "https://github.com/nicoburns/multirun"
+readme = "README.md"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
