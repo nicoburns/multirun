@@ -18,12 +18,15 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-gnu
             artifactName: windows-x86_64
+            binaryExtension: '.exe'
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifactName: linux-x86_64
+            binaryExtension: ''
           - os: macos-latest
             target: x86_64-apple-darwin
             artifactName: macos-universal
+            binaryExtension: ''
           
     runs-on: ${{ matrix.os }}
 
@@ -35,10 +38,6 @@ jobs:
         run: |
           rustup target add ${{ matrix.target }}
           cargo build --release --target ${{ matrix.target }}
-          ls
-          ls target
-          ls target/${{ matrix.target }}
-          ls target/${{ matrix.target }}/release
 
       - name: Build Aarch64 binary
         run: |
@@ -55,5 +54,5 @@ jobs:
       - name: Upload binary as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: multirun-${{ matrix.artifactName }}
-          path: target/${{ matrix.target }}/release/multirun
+          name: multirun-${{ matrix.artifactName }}${{ matrix.binaryExtension }}
+          path: target/${{ matrix.target }}/release/multirun${{ matrix.binaryExtension }}
