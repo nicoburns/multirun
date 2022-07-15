@@ -13,14 +13,43 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macOS-latest]
         include:
+          - os: windows-latest
+            target: x86_64-pc-windows-gnu
+            artifactName: windows-x86_64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifactName: linux-x86_64
           - os: macos-latest
-            arm: true
+            target: x86_64-apple-darwin
+            artifactName: macos-universal
           
     runs-on: ${{ matrix.os }}
 
     steps:
+
       - uses: actions/checkout@v3
-      - name: Build
-        run: cargo build --release --verbose
+        name: Checkout Repository
+
+      - name: Build native binary
+        run: cargo build --release --target $RUST_TARGET_TRIPLE
+        env:
+          RUST_TARGET_TRIPLE: ${{ matrix.target }}
+
+      - name: Build Aarch64 binary
+        run: |
+          cargo build --release --target aarch64-apple-darwin
+        if: matrix.os == 'macOS-latest'
+
+      - name: Create universal binary + place at x86 path
+        run: |
+          lipo target/x86_64-apple-darwin/release/multirun target/aarch64-apple-darwin/release/multirun -create -output ./multirun
+          cp -f ./multirun target/x86_64-apple-darwin/release/multirun
+        if: matrix.os == 'macOS-latest'
+
+       - name: Upload binary as artifact
+         uses: actions/upload-artifact@v3
+         with:
+          name: multirun-${{ matrix.os }}
+          path: target/${{ matrix.artifactName }}/release/multirun
