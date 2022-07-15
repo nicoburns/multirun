@@ -32,7 +32,9 @@ jobs:
         name: Checkout Repository
 
       - name: Build native binary
-        run: cargo build --release --target ${{ matrix.target }}
+        run: |
+          rustup target add ${{ matrix.target }}
+          cargo build --release --target ${{ matrix.target }}
 
       - name: Build Aarch64 binary
         run: |
