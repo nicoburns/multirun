@@ -36,6 +36,7 @@ jobs:
 
       - name: Build Aarch64 binary
         run: |
+          rustup target add aarch64-apple-darwin
           cargo build --release --target aarch64-apple-darwin
         if: matrix.os == 'macOS-latest'
 
