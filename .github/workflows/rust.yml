@@ -49,5 +49,5 @@ jobs:
       - name: Upload binary as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: multirun-${{ matrix.os }}
-          path: target/${{ matrix.artifactName }}/release/multirun
+          name: multirun-${{ matrix.artifactName }}
+          path: target/${{ matrix.target }}/release/multirun
