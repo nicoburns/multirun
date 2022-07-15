@@ -28,7 +28,6 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-
       - uses: actions/checkout@v3
         name: Checkout Repository
 
@@ -48,8 +47,8 @@ jobs:
           cp -f ./multirun target/x86_64-apple-darwin/release/multirun
         if: matrix.os == 'macOS-latest'
 
-       - name: Upload binary as artifact
-         uses: actions/upload-artifact@v3
-         with:
+      - name: Upload binary as artifact
+        uses: actions/upload-artifact@v3
+        with:
           name: multirun-${{ matrix.os }}
           path: target/${{ matrix.artifactName }}/release/multirun
