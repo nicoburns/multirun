@@ -1,5 +1,8 @@
 # Changelog
 
+# 0.3.1
+- Bump dependency versions
+
 # 0.3.0
 - Support for relative paths in services directories (paths are resolved relative to the config file's directory)
 - Support for `paths` section of config file (also support relative path resolution)
