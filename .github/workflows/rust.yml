@@ -35,6 +35,10 @@ jobs:
         run: |
           rustup target add ${{ matrix.target }}
           cargo build --release --target ${{ matrix.target }}
+          ls
+          ls target
+          ls target/${{ matrix.target }}
+          ls target/${{ matrix.target }}/release
 
       - name: Build Aarch64 binary
         run: |
