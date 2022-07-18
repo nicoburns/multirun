@@ -8,4 +8,4 @@ First install the Rust compiler via https://rustup.rs, then run `cargo install m
 
 ## Usage
 
-Create a multirun.toml file, then run `multirun`.
+Create a multirun.json file, then run `multirun`.
