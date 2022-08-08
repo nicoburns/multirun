@@ -47,7 +47,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
 
-        let mut child = command.spawn().expect("failed to spawn command");
+        let mut child = match command.spawn() {
+            Ok(child) => child,
+            Err(err) => {
+                eprintln!("Failed to run service '{}' (command '{}')", &name, &service.command);
+                eprintln!("{:?}", err);
+                eprintln!("");
+                panic!("Exiting");
+            }
+        };
         let stdout = child.stdout.take().expect("child did not have a handle to stdout");
         let stderr = child.stderr.take().expect("child did not have a handle to stderr");
         let stdout_reader = LinesStream::new(BufReader::new(stdout).lines());
