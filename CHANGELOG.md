@@ -1,5 +1,8 @@
 # Changelog
 
+# 0.3.2
+- Improve error reporting when running a command fails
+
 # 0.3.1
 - Bump dependency versions
 
